@@ -21,6 +21,7 @@ const schema = z.object({
   email: z.string().email('Email inválido'),
   cpf: z.string().length(11, 'CPF deve ter 11 dígitos'),
   oab: z.string().nonempty('OAB é obrigatório'),
+  tratamento: z.string().nonempty('Tratamento é obrigatório'),
 });
 
 // Tipando o formulário baseado no esquema Zod
@@ -53,6 +54,7 @@ const Formulario = () => {
       setValue('email', selectedAdvogado.email);
       setValue('cpf', selectedAdvogado.cpf);
       setValue('oab', selectedAdvogado.oab);
+      setValue('tratamento', selectedAdvogado.tratamento);
     }
   };
 

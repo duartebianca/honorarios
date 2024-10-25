@@ -64,7 +64,7 @@ def gerar_recibo_api():
         required_fields = [
             'numeroContrato', 'nomeCliente', 'cnpj', 'beneficiario', 
             'endereco', 'oab', 'cpf', 'telefone', 'email', 'cep',
-            'parcelas', 'valor', 'data'
+            'parcelas', 'valor', 'data', 'tratamento'
         ]
         
         missing_fields = [field for field in required_fields if not data.get(field)]
@@ -93,7 +93,8 @@ def gerar_recibo_api():
             'v_cep': data.get('cep', ''),
             'v_parcela': data.get('parcelas', ''),
             'v_valor': data.get('valor', ''),
-            'v_data': data.get('data', '')
+            'v_data': data.get('data', ''),
+            'v_tratamento': data.get('tratamento', '')
         }
         print("Contexto para renderização:", context)
         # Realizar a substituição normal do documento
