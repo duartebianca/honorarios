@@ -83,7 +83,6 @@ def gerar_recibo_api():
         template_path = os.path.join(os.path.dirname(__file__), 'Recibo de Honorários - Box Visual Law 360.docx')
         doc = DocxTemplate(template_path)
         
-        print(formatar_data(data.get('data')))
         # Preparar o contexto com os dados
         context = {
             'v_nome_advogado': data.get('beneficiario', ''),
