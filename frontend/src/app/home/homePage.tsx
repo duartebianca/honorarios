@@ -156,7 +156,7 @@ const Formulario = () => {
           </GridItem>
         </Grid>
 
-        <Button isLoading loadingText="Gerando recibo..." mt="20px" type="submit" colorScheme="teal" width="full">
+        <Button mt="20px" type="submit" colorScheme="teal" width="full">
           Gerar Recibo
         </Button>
       </Box>
