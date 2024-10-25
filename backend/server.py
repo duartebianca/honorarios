@@ -53,6 +53,10 @@ def replace_in_textboxes(textbox, context):
                     if re.search(pattern, text.text):
                         text.text = re.sub(pattern, str(value), text.text)
 
+def formatar_data(data):
+    ano, mes, dia = data.split('-')
+    return f'{dia}/{mes}/{ano}'
+
 @app.route('/api/gerar-recibo', methods=['POST'])
 def gerar_recibo_api():
     try:
@@ -79,6 +83,7 @@ def gerar_recibo_api():
         template_path = os.path.join(os.path.dirname(__file__), 'Recibo de Honorários - Box Visual Law 360.docx')
         doc = DocxTemplate(template_path)
         
+        print(formatar_data(data.get('data')))
         # Preparar o contexto com os dados
         context = {
             'v_nome_advogado': data.get('beneficiario', ''),
@@ -93,7 +98,7 @@ def gerar_recibo_api():
             'v_cep': data.get('cep', ''),
             'v_parcela': data.get('parcelas', ''),
             'v_valor': data.get('valor', ''),
-            'v_data': data.get('data', ''),
+            'v_data': formatar_data(data.get('data')),
             'v_tratamento': data.get('tratamento', '')
         }
         print("Contexto para renderização:", context)
