@@ -1,49 +1,129 @@
 from flask import Flask, request, send_file, jsonify
-from docx import Document
+from docxtpl import DocxTemplate
+from docx.document import Document
+from docx.oxml.shared import qn
+from docx.oxml.text.paragraph import CT_P
+from docx.text.paragraph import Paragraph
+from docx.shape import InlineShape
+import re
 import io
+import os
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
+
+advogados = [
+    {
+        "beneficiario": "Magna Barbosa",
+        "oab": "26.600",
+        "telefone": "(81) 99999-9999",
+        "email": "magna@advogados.com",
+        "cpf": "12345678901",
+        "tratamento": "DRA"
+    },
+    {
+        "beneficiario": "João Barros",
+        "oab": "12.600",
+        "telefone": "(87) 99499-9999",
+        "email": "joao@advogados.com",
+        "cpf": "12345678222",
+        "tratamento": "DR"
+    }
+]
+
+@app.route('/api/advogados', methods=['GET'])
+def get_advogados():
+    return jsonify(advogados), 200
+
+def find_textboxes(doc):
+    """Encontra todas as caixas de texto no documento"""
+    textboxes = []
+    for shape in doc.element.body.iter('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}txbxContent'):
+        textboxes.append(shape)
+    return textboxes
+
+def replace_in_textboxes(textbox, context):
+    """Substitui as variáveis em uma caixa de texto específica"""
+    for paragraph in textbox.iterchildren('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}p'):
+        for run in paragraph.iterchildren('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}r'):
+            for text in run.iterchildren('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t'):
+                for key, value in context.items():
+                    pattern = r'\{\{\s*' + re.escape(key) + r'\s*\}\}'
+                    if re.search(pattern, text.text):
+                        text.text = re.sub(pattern, str(value), text.text)
 
 @app.route('/api/gerar-recibo', methods=['POST'])
-def gerar_recibo():
-    data = request.json
-
-    # Verificação básica para garantir que todos os dados necessários estejam presentes
-    required_fields = ['numeroContrato', 'nomeCliente', 'cnpj', 'beneficiario', 'endereco']
-    missing_fields = [field for field in required_fields if field not in data]
-    
-    if missing_fields:
-        return jsonify({'error': f'Campos faltando: {", ".join(missing_fields)}'}), 400
-
-    # Carregar o modelo de documento
+def gerar_recibo_api():
     try:
-        doc = Document('/mnt/data/Recibo de Honorários - Box Visual Law 360.docx')
+        # Obter dados do request JSON
+        data = request.json
+        print("Dados recebidos:", data)
+        
+        # Verificação de campos obrigatórios
+        required_fields = [
+            'numeroContrato', 'nomeCliente', 'cnpj', 'beneficiario', 
+            'endereco', 'oab', 'cpf', 'telefone', 'email', 'cep',
+            'parcelas', 'valor', 'data'
+        ]
+        
+        missing_fields = [field for field in required_fields if not data.get(field)]
+        if missing_fields:
+            print(f"Campos faltando: {missing_fields}")
+            return jsonify({
+                'error': 'Campos obrigatórios faltando',
+                'missing_fields': missing_fields
+            }), 400
+
+        # Carregar o modelo de documento
+        template_path = os.path.join(os.path.dirname(__file__), 'Recibo de Honorários - Box Visual Law 360.docx')
+        doc = DocxTemplate(template_path)
+        
+        # Preparar o contexto com os dados
+        context = {
+            'v_nome_advogado': data.get('beneficiario', ''),
+            'v_oab': data.get('oab', ''),
+            'v_cpf': data.get('cpf', ''),
+            'v_nome_cliente': data.get('nomeCliente', ''),
+            'v_cnpj': data.get('cnpj', ''),
+            'v_endereco': data.get('endereco', ''),
+            'v_contrato': data.get('numeroContrato', ''),
+            'v_telefone': data.get('telefone', ''),
+            'v_email': data.get('email', ''),
+            'v_cep': data.get('cep', ''),
+            'v_parcela': data.get('parcelas', ''),
+            'v_valor': data.get('valor', ''),
+            'v_data': data.get('data', '')
+        }
+        print("Contexto para renderização:", context)
+        # Realizar a substituição normal do documento
+        doc.render(context)
+
+        # Procurar e substituir nas caixas de texto
+        textboxes = find_textboxes(doc)
+        for textbox in textboxes:
+            replace_in_textboxes(textbox, context)
+
+        # Criar buffer para armazenar o documento
+        buffer = io.BytesIO()
+        doc.save(buffer)
+        buffer.seek(0)
+
+        # Enviar o arquivo como resposta
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name=f"Recibo_de_Honorarios_{data.get('numeroContrato', 'Recibo')}.docx",
+            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+
     except Exception as e:
-        return jsonify({'error': f'Erro ao carregar o documento: {str(e)}'}), 500
+        return jsonify({'error': str(e)}), 500
 
-    # Função para substituir texto no parágrafo, mesmo se dividido em diferentes runs
-    def replace_text_in_paragraph(paragraph, search_text, replace_text):
-        for run in paragraph.runs:
-            if search_text in run.text:
-                run.text = run.text.replace(search_text, replace_text)
-
-    # Substituir as variáveis no documento
-    for p in doc.paragraphs:
-        replace_text_in_paragraph(p, 'xxxxx', data.get('numeroContrato', ''))
-        replace_text_in_paragraph(p, 'CLIENTE', data.get('nomeCliente', ''))
-        replace_text_in_paragraph(p, '00000000000000', data.get('cnpj', ''))  # Exemplo de CNPJ
-        replace_text_in_paragraph(p, 'BENEFICIÁRIO', data.get('beneficiario', ''))
-        replace_text_in_paragraph(p, 'Rua', data.get('endereco', ''))  # Exemplo de endereço
-        # Continue substituindo outros campos conforme necessário.
-
-    # Gerar o documento como resposta
-    buffer = io.BytesIO()
-    doc.save(buffer)
-    buffer.seek(0)
-
-    return send_file(buffer, as_attachment=True, 
-                     download_name=f"Recibo de Honorários - {data.get('numeroContrato', 'Recibo')}.docx",
-                     mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+# Rota de teste para verificar se a API está funcionando
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    return jsonify({'status': 'ok', 'message': 'API está funcionando corretamente'})
 
 if __name__ == '__main__':
     app.run(debug=True)

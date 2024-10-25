@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -16,17 +16,47 @@ const schema = z.object({
   parcelas: z.string().transform((val) => parseInt(val, 10)).refine(val => !isNaN(val) && val > 0, { message: 'Deve haver ao menos uma parcela' }),
   valor: z.string().transform((val) => parseFloat(val)).refine(val => val >= 0, { message: 'O valor deve ser positivo' }),
   data: z.string().nonempty('Data é obrigatória'),
+  telefone: z.string().nonempty('Telefone é obrigatório'),
+  email: z.string().email('Email inválido'),
+  cpf: z.string().length(11, 'CPF deve ter 11 dígitos'),
+  oab: z.string().nonempty('OAB é obrigatório'),
 });
 // Tipando o formulário baseado no esquema Zod
 type FormData = z.infer<typeof schema>;
 
 const Formulario = () => {
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
+  const [advogados, setAdvogados] = useState([]);
+
+  useEffect(() => {
+    // Carregar advogados do backend
+    const fetchAdvogados = async () => {
+      const response = await fetch('http://localhost:5000/api/advogados');
+      const data = await response.json();
+      console.log(data);
+      setAdvogados(data);
+    };
+
+    fetchAdvogados();
+  }, []);
+
+  const handleAdvogadoChange = (event) => {
+    const selectedAdvogado = advogados.find(adv => adv.beneficiario === event.target.value);
+    if (selectedAdvogado) {
+      // Preencher os campos automaticamente com os dados do advogado selecionado
+      setValue('beneficiario', selectedAdvogado.beneficiario);
+      setValue('telefone', selectedAdvogado.telefone);
+      setValue('email', selectedAdvogado.email);
+      setValue('cpf', selectedAdvogado.cpf);
+      setValue('oab', selectedAdvogado.oab);
+    }
+  };
+
   const onSubmit = async (data: FormData) => {
-    const response = await fetch('/api/gerar-recibo', {
+    const response = await fetch('http://localhost:5000/api/gerar-recibo', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -46,9 +76,12 @@ const Formulario = () => {
     <Box as="form" onSubmit={handleSubmit(onSubmit)} maxW="500px" mx="auto" mt="20px">
       <Heading mb="2"> Gerador de Recibo de Honorários </Heading>
       <Box mb="4">
-        <Select placeholder="Selecione o beneficiário" {...register('beneficiario')}>
-          <option value="Advogado 1">Advogado 1</option>
-          <option value="Advogado 2">Advogado 2</option>
+        <Select placeholder="Selecione o beneficiário" onChange={handleAdvogadoChange}>
+          {advogados.map(adv => (
+            <option key={adv.beneficiario} value={adv.beneficiario}>
+              {adv.beneficiario}
+            </option>
+          ))}
         </Select>
         {errors.beneficiario?.message && <Text color="red.500" fontSize="sm">{errors.beneficiario.message.toString()}</Text>}
       </Box>
