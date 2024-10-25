@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import  { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button, Input, Box, Text, Heading, Grid, GridItem, Image, Divider } from '@chakra-ui/react';
+import { Button, Input, Box, Text, Heading, Grid, GridItem, Image } from '@chakra-ui/react';
 import { Select } from '@chakra-ui/select';
 import NavBar from '../../shared/components/nav-bar';
 
