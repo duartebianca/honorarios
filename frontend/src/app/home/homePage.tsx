@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button, Input, Box, Text, Heading } from '@chakra-ui/react';
+import { Button, Input, Box, Text, Heading, Grid, GridItem, Image, Divider } from '@chakra-ui/react';
 import { Select } from '@chakra-ui/select';
+import NavBar from '../../shared/components/nav-bar';
 
 // Definindo o esquema de validação Zod
 const schema = z.object({
@@ -21,6 +22,7 @@ const schema = z.object({
   cpf: z.string().length(11, 'CPF deve ter 11 dígitos'),
   oab: z.string().nonempty('OAB é obrigatório'),
 });
+
 // Tipando o formulário baseado no esquema Zod
 type FormData = z.infer<typeof schema>;
 
@@ -36,7 +38,6 @@ const Formulario = () => {
     const fetchAdvogados = async () => {
       const response = await fetch('http://localhost:5000/api/advogados');
       const data = await response.json();
-      console.log(data);
       setAdvogados(data);
     };
 
@@ -73,63 +74,91 @@ const Formulario = () => {
   };
 
   return (
-    <Box as="form" onSubmit={handleSubmit(onSubmit)} maxW="500px" mx="auto" mt="20px">
-      <Heading mb="2"> Gerador de Recibo de Honorários </Heading>
-      <Box mb="4">
-        <Select placeholder="Selecione o beneficiário" onChange={handleAdvogadoChange}>
-          {advogados.map(adv => (
-            <option key={adv.beneficiario} value={adv.beneficiario}>
-              {adv.beneficiario}
-            </option>
-          ))}
-        </Select>
-        {errors.beneficiario?.message && <Text color="red.500" fontSize="sm">{errors.beneficiario.message.toString()}</Text>}
-      </Box>
+    <>
+      <NavBar /> {/* Adicionando a NavBar fora do formulário */}
+      <Box as="form" onSubmit={handleSubmit(onSubmit)} maxW="800px" mx="auto" mt="20px" p={6} fontFamily="Inter">
+        
+        {/* Cabeçalho com logo e título */}
+        <Grid templateColumns="repeat(12, 1fr)" gap={4} alignItems="center">
+          <GridItem colSpan={[12, 2]}>
+            <Image src="https://i.imgur.com/O2uKPTh.png" alt="Logo" boxSize="100px" objectFit="contain" />
+          </GridItem>
+          <GridItem colSpan={[12, 6]} textAlign="left">
+            <Text fontSize="2xl" fontWeight="300" color="#a78466">RECIBO DE</Text>
+            <Heading as="h1" fontSize="4xl" fontWeight="700" color="#14365d">HONORÁRIOS</Heading>
+          </GridItem>
+          <GridItem colSpan={[12, 4]}>
+            <Box bg="#ffbd59" p={3} borderRadius="md" width="100%" height="fit-content" textAlign="center">
+              <Text fontSize="sm">
+                Gere <strong>automaticamente</strong> os recibos dos seus honorários preenchendo este formulário.
+              </Text>
+            </Box>
+          </GridItem>
+        </Grid>
 
-      <Box mb="4">
-        <Input placeholder="Nome do Cliente" {...register('nomeCliente')} />
-        {errors.nomeCliente?.message && <Text color="red.500" fontSize="sm">{errors.nomeCliente.message.toString()}</Text>}
-      </Box>
+        {/* Corpo do formulário */}
+        <Grid templateColumns="repeat(12, 1fr)" gap={4} mt={6}>
+          <GridItem colSpan={[12, 6]}>
+            <Text mb="2">Advogado(a)</Text>
+            <Select placeholder="Selecione o(a) Advogado(a)" onChange={handleAdvogadoChange}>
+              {advogados.map(adv => (
+                <option key={adv.beneficiario} value={adv.beneficiario}>
+                  {adv.beneficiario}
+                </option>
+              ))}
+            </Select>
+            {errors.beneficiario?.message && <Text color="red.500" fontSize="sm">{errors.beneficiario.message.toString()}</Text>}
+          </GridItem>
+          <GridItem colSpan={[12, 6]}>
+            <Text mb="2">Endereço</Text>
+            <Input {...register('endereco')} />
+            {errors.endereco?.message && <Text color="red.500" fontSize="sm">{errors.endereco.message.toString()}</Text>}
+          </GridItem>
 
-      <Box mb="4">
-        <Input placeholder="CNPJ" {...register('cnpj')} />
-        {errors.cnpj?.message && <Text color="red.500" fontSize="sm">{errors.cnpj.message.toString()}</Text>}
-      </Box>
+          <GridItem colSpan={[12, 6]}>
+            <Text mb="2">Nome do Cliente</Text>
+            <Input {...register('nomeCliente')} />
+            {errors.nomeCliente?.message && <Text color="red.500" fontSize="sm">{errors.nomeCliente.message.toString()}</Text>}
+          </GridItem>
+          <GridItem colSpan={[12, 6]}>
+            <Text mb="2">CEP</Text>
+            <Input {...register('cep')} />
+            {errors.cep?.message && <Text color="red.500" fontSize="sm">{errors.cep.message.toString()}</Text>}
+          </GridItem>
 
-      <Box mb="4">
-        <Input placeholder="Endereço" {...register('endereco')} />
-        {errors.endereco?.message && <Text color="red.500" fontSize="sm">{errors.endereco.message.toString()}</Text>}
-      </Box>
+          <GridItem colSpan={[12, 6]}>
+            <Text mb="2">CNPJ</Text>
+            <Input {...register('cnpj')} />
+            {errors.cnpj?.message && <Text color="red.500" fontSize="sm">{errors.cnpj.message.toString()}</Text>}
+          </GridItem>
+          <GridItem colSpan={[12, 6]}>
+            <Text mb="2">Nº do Contrato</Text>
+            <Input {...register('numeroContrato')} />
+            {errors.numeroContrato?.message && <Text color="red.500" fontSize="sm">{errors.numeroContrato.message.toString()}</Text>}
+          </GridItem>
 
-      <Box mb="4">
-        <Input placeholder="CEP" {...register('cep')} />
-        {errors.cep?.message && <Text color="red.500" fontSize="sm">{errors.cep.message.toString()}</Text>}
-      </Box>
+          <GridItem colSpan={[12, 3]}>
+            <Text mb="2">Parcelas</Text>
+            <Input type="number" {...register('parcelas')} />
+            {errors.parcelas?.message && <Text color="red.500" fontSize="sm">{errors.parcelas.message.toString()}</Text>}
+          </GridItem>
+          <GridItem colSpan={[12, 3]}>
+            <Text mb="2">Valor</Text>
+            <Input type="number" {...register('valor')} />
+            {errors.valor?.message && <Text color="red.500" fontSize="sm">{errors.valor.message.toString()}</Text>}
+          </GridItem>
+          <GridItem colSpan={[12, 6]}>
+            <Text mb="2">Data</Text>
+            <Input type="date" {...register('data')} />
+            {errors.data?.message && <Text color="red.500" fontSize="sm">{errors.data.message.toString()}</Text>}
+          </GridItem>
+        </Grid>
 
-      <Box mb="4">
-        <Input placeholder="Número do Contrato" {...register('numeroContrato')} />
-        {errors.numeroContrato?.message && <Text color="red.500" fontSize="sm">{errors.numeroContrato.message.toString()}</Text>}
+        <Button mt="20px" type="submit" colorScheme="teal" width="full">
+          Gerar Recibo
+        </Button>
       </Box>
-
-      <Box mb="4">
-        <Input type="number" placeholder="Parcelas" {...register('parcelas')} />
-        {errors.parcelas?.message && <Text color="red.500" fontSize="sm">{errors.parcelas.message.toString()}</Text>}
-      </Box>
-
-      <Box mb="4">
-        <Input type="number" placeholder="Valor" {...register('valor')} />
-        {errors.valor?.message && <Text color="red.500" fontSize="sm">{errors.valor.message.toString()}</Text>}
-      </Box>
-
-      <Box mb="4">
-        <Input type="date" placeholder="Data" {...register('data')} />
-        {errors.data?.message && <Text color="red.500" fontSize="sm">{errors.data.message.toString()}</Text>}
-      </Box>
-
-      <Button mt="20px" type="submit" colorScheme="teal">
-        Gerar Recibo
-      </Button>
-    </Box>
+    </>
   );
 };
 
