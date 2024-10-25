@@ -65,4 +65,15 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+
+  @font-face {
+    font-family: 'Higuen Elegant Serif';
+    src: url('/fonts/Higuen-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
+  
+  body {
+    font-family: 'Lato', sans-serif;
+  }
 }
