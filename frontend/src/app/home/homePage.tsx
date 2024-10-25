@@ -64,7 +64,7 @@ const Formulario = () => {
 
   useEffect(() => {
     const fetchAdvogados = async () => {
-      const response = await fetch('http://localhost:5000/api/advogados');
+      const response = await fetch('https://honorarios.onrender.com/api/advogados');
       const data = await response.json();
       setAdvogados(data);
     };
