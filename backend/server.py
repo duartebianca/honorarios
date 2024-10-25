@@ -20,7 +20,9 @@ advogados = [
         "telefone": "(81) 99999-9999",
         "email": "magna@advogados.com",
         "cpf": "12345678901",
-        "tratamento": "DRA"
+        "tratamento": "DRA",
+        "endereco": "Rua dos Advogados, 123, Recife - PE",
+        "nacionalidade": "brasileira",
     },
     {
         "beneficiario": "João Barros",
@@ -28,7 +30,9 @@ advogados = [
         "telefone": "(87) 99499-9999",
         "email": "joao@advogados.com",
         "cpf": "12345678222",
-        "tratamento": "DR"
+        "tratamento": "DR",
+        "endereco": "Rua dos Advogados, 123, Recife - PE",
+        "nacionalidade": "brasileiro",
     }
 ]
 
@@ -57,20 +61,84 @@ def formatar_data(data):
     ano, mes, dia = data.split('-')
     return f'{dia}/{mes}/{ano}'
 
+# Função para gerar procuração
+@app.route('/api/gerar-procuracao', methods=['POST'])
+def gerar_procuracao_api():
+    try:
+        # Obter dados do request JSON
+        data = request.json
+        print("Dados recebidos:", data)
+
+        # Verificação de campos obrigatórios
+        required_fields = [
+            'nomeCliente', 'nacionalidadeCliente', 'profissao', 'cnpj', 'enderecoCliente', 
+            'beneficiario', 'nacionalidadeAdvogado', 'oab', 'enderecoAdvogado', 'nomeEmpresa', 'data'
+        ]
+
+        missing_fields = [field for field in required_fields if not data.get(field)]
+        if missing_fields:
+            print(f"Campos faltando: {missing_fields}")
+            return jsonify({
+                'error': 'Campos obrigatórios faltando',
+                'missing_fields': missing_fields
+            }), 400
+
+        # Carregar o modelo de documento de procuração
+        template_path = os.path.join(os.path.dirname(__file__), 'Procuração I - Box Visual Law.docx')
+        doc = DocxTemplate(template_path)
+
+        # Preparar o contexto com os dados
+        context = {
+            'v_nome_cliente': data.get('nomeCliente', ''),
+            'v_nacionalidade_cliente': data.get('nacionalidadeCliente', ''),  # Corrigido para buscar 'nacionalidadeCliente'
+            'v_profissao': data.get('profissao', ''),
+            'v_cnpj': data.get('cnpj', ''),  # Certifique-se de que o CNPJ está sendo enviado corretamente
+            'v_endereco_cliente': data.get('enderecoCliente', ''),  # Usar 'enderecoCliente' para o endereço do cliente
+            'v_nome_advogado': data.get('beneficiario', ''),
+            'v_nacionalidade_advogado': data.get('nacionalidadeAdvogado', ''),
+            'v_oab': data.get('oab', ''),
+            'v_endereco_advogado': data.get('enderecoAdvogado', ''),
+            'v_nome_empresa': data.get('nomeEmpresa', ''),
+            'v_data': formatar_data(data.get('data')),
+        }
+
+        print("Contexto para renderização:", context)
+
+        # Realizar a substituição normal do documento
+        doc.render(context)
+
+        # Criar buffer para armazenar o documento
+        buffer = io.BytesIO()
+        doc.save(buffer)
+        buffer.seek(0)
+
+        # Enviar o arquivo como resposta
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name=f"Procuracao_{data.get('nomeCliente', 'Procuracao')}.docx",
+            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# Função existente para gerar recibo
 @app.route('/api/gerar-recibo', methods=['POST'])
 def gerar_recibo_api():
     try:
         # Obter dados do request JSON
         data = request.json
         print("Dados recebidos:", data)
-        
+
         # Verificação de campos obrigatórios
         required_fields = [
             'numeroContrato', 'nomeCliente', 'cnpj', 'beneficiario', 
             'endereco', 'oab', 'cpf', 'telefone', 'email', 'cep',
             'parcelas', 'valor', 'data', 'tratamento'
         ]
-        
+
         missing_fields = [field for field in required_fields if not data.get(field)]
         if missing_fields:
             print(f"Campos faltando: {missing_fields}")
@@ -82,7 +150,7 @@ def gerar_recibo_api():
         # Carregar o modelo de documento
         template_path = os.path.join(os.path.dirname(__file__), 'Recibo de Honorários - Box Visual Law 360.docx')
         doc = DocxTemplate(template_path)
-        
+
         # Preparar o contexto com os dados
         context = {
             'v_nome_advogado': data.get('beneficiario', ''),
@@ -101,6 +169,7 @@ def gerar_recibo_api():
             'v_tratamento': data.get('tratamento', '')
         }
         print("Contexto para renderização:", context)
+
         # Realizar a substituição normal do documento
         doc.render(context)
 
