@@ -37,7 +37,7 @@ const Formulario = () => {
   useEffect(() => {
     // Carregar advogados do backend
     const fetchAdvogados = async () => {
-      const response = await fetch('http://localhost:5000/api/advogados');
+      const response = await fetch('https://honorarios.onrender.com/api/advogados');
       const data = await response.json();
       setAdvogados(data);
     };
@@ -59,7 +59,7 @@ const Formulario = () => {
   };
 
   const onSubmit = async (data: FormData) => {
-    const response = await fetch('http://localhost:5000/api/gerar-recibo', {
+    const response = await fetch('https://honorarios.onrender.com/api/gerar-recibo', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -156,7 +156,7 @@ const Formulario = () => {
           </GridItem>
         </Grid>
 
-        <Button mt="20px" type="submit" colorScheme="teal" width="full">
+        <Button loadingText="Gerando recibo..." mt="20px" type="submit" colorScheme="teal" width="full">
           Gerar Recibo
         </Button>
       </Box>
